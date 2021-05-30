@@ -5,7 +5,6 @@ import com.backend.dropbox.entity.UserFile;
 import com.backend.dropbox.service.UserFileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
@@ -59,10 +57,10 @@ public class UserFileController {
     }
 
     @GetMapping("getAll")
-    public ResponseEntity<?> getAllFilesFromFolder(@RequestParam("filePath") String filePath){
+    public ResponseEntity<?> getAllFilesFromFolder(@RequestParam("filePath") String filePath) {
         List<UserFile> userFiles = userFileService.loadAll(filePath);
         System.out.println(userFiles.size());
-        for(UserFile file:userFiles){
+        for (UserFile file : userFiles) {
             System.out.println(file.getFileName());
         }
         return ResponseEntity.ok().build();
