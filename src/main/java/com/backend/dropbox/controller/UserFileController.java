@@ -6,6 +6,7 @@ import com.backend.dropbox.service.UserFileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,13 @@ import java.io.FileNotFoundException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
+
+
+/**
+ * The UserFileController Class implements an Rest Controller that
+ * handles File related requests.
+ **/
+
 
 @RestController
 @RequestMapping(path = "api/v1/files")
@@ -59,23 +67,21 @@ public class UserFileController {
     @GetMapping("getAll")
     public ResponseEntity<?> getAllFilesFromFolder(@RequestParam("filePath") String filePath) {
         List<UserFile> userFiles = userFileService.loadAll(filePath);
-        System.out.println(userFiles.size());
-        for (UserFile file : userFiles) {
-            System.out.println(file.getFileName());
-        }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(userFiles);
     }
 
     @GetMapping("download")
     public ResponseEntity<?> downloadFile(@RequestParam("filePath") String filePath, @RequestParam("fileName") String fileName) {
         File fileToDownload = userFileService.loadFile(filePath, fileName);
+        InputStreamResource resource = null;
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
         headers.set(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=" + fileName.replace(" ", "_"));
         headers.add("Pragma", "no-cache");
         headers.add("Expires", "0");
-        InputStreamResource resource = null;
+
         try {
             resource = new InputStreamResource(new FileInputStream(fileToDownload));
             return ResponseEntity.ok()
@@ -89,4 +95,9 @@ public class UserFileController {
         }
     }
 
+    @PostMapping("markOrUnmarkAsFavorite")
+    public ResponseEntity<?> markOrUnmarkAsFavorite(@RequestParam("filePath") String filePath, @RequestParam("fileName") String fileName) {
+        userFileService.markOrUnmarkAsFavorite(filePath, fileName);
+        return ResponseEntity.ok().build();
+    }
 }

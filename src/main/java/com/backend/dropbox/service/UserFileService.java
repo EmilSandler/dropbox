@@ -3,6 +3,7 @@ package com.backend.dropbox.service;
 import com.backend.dropbox.customExceptions.InvalidDirectoryException;
 import com.backend.dropbox.entity.UserFile;
 import com.backend.dropbox.repository.UserFileRepository;
+import com.google.common.base.Strings;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -95,33 +96,36 @@ public class UserFileService implements StorageService {
     @Override
     public List<UserFile> loadAll(String folderPath) {
         String owner = getOwner();
-        folderPath = ROOT_PATH + "\\" + owner + "\\" + folderPath + "\\";
 
+        if(Strings.isNullOrEmpty(folderPath)) {
+            folderPath = ROOT_PATH + "\\" + owner + "\\";
+        }
+        else{
+            folderPath = ROOT_PATH + "\\" + owner + "\\" + folderPath + "\\";
+        }
         return userFileRepository.findByOwnerAndFilePath(owner, folderPath);
     }
 
 
     public void delete(String filepath, String fileName) {
-        UserFile userFile = userFileRepository.findByFileNameAndFilePath(fileName, filepath);
+        String folderPath = ROOT_PATH + "\\" + getOwner() + "\\" +  filepath;
+        UserFile userFile = userFileRepository.findByFileNameAndFilePath(fileName, folderPath);
 
         if (!userFile.getIsFile()) {
-            deleteFolder(filepath, fileName);
+            deleteFolder(folderPath, fileName);
         } else {
-            deleteFile(filepath, fileName);
+            deleteFile(folderPath, fileName);
         }
     }
 
 
     private void deleteFolder(String filepath, String fileName) {
-        String folderPath = ROOT_PATH + "\\" + getOwner() + "\\" + filepath;
-        Path path = Paths.get(folderPath);
-
+        Path path = Paths.get(filepath);
         List<UserFile> fileToDelete = userFileRepository.findByOwner(getOwner())
                 .stream()
                 .filter(file -> file.getFilePath().contains(path.toString()))
+                .filter(file -> file.getFileName().contains(fileName))
                 .collect(Collectors.toList());
-
-
         for (UserFile file : fileToDelete) {
             userFileRepository.deleteById(file.getId());
         }
@@ -135,9 +139,7 @@ public class UserFileService implements StorageService {
     }
 
     private void deleteFile(String filepath, String fileName) {
-        String folderPath = ROOT_PATH + "\\" + getOwner();
-        Path path = Paths.get(folderPath);
-
+        Path path = Paths.get(filepath);
         UserFile file = userFileRepository.findByFileNameAndFilePath(fileName, filepath);
         userFileRepository.deleteById(file.getId());
         Path newPath = Paths.get(path.toString(), fileName);
@@ -166,6 +168,15 @@ public class UserFileService implements StorageService {
         Path path = Paths.get(folderPath, filepath, fileName);
         return new File(path.toString());
     }
+
+
+    public void markOrUnmarkAsFavorite(String filepath, String fileName){
+        String finalFilePath = ROOT_PATH + "\\" + getOwner() + "\\" +  filepath;
+        UserFile file = userFileRepository.findByFileNameAndFilePath(fileName, finalFilePath);
+        file.setFavorite(!file.getFavorite());
+        userFileRepository.save(file);
+    }
+
 
     @Override
     public void deleteAll() {
